@@ -1,0 +1,74 @@
+# Apache Configuration for Modabber Public Web Root
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+# Security Headers (also reinforced via PHP bootstrap)
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "DENY"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+    Header set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Header unset X-Powered-By
+</IfModule>
+
+# Block access to hidden files and dangerous extensions
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "(^#.*#|\.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|env|user\.ini))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Custom Error Pages
+ErrorDocument 404 /error.php?code=404
+ErrorDocument 403 /error.php?code=403
+ErrorDocument 500 /error.php?code=500
+
+# URL Rewriting
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Rewrite for application form POST: /project/{id}/apply -> project-apply.php?id=$1
+    RewriteRule ^project/([0-9]+)/apply/?$ project-apply.php?id=$1 [QSA,L]
+
+    # Rewrite for project detail: /project/{id} -> project.php?id=$1
+    RewriteRule ^project/([0-9]+)/?$ project.php?id=$1 [QSA,L]
+
+    # Rewrite for login: /login -> login.php
+    RewriteRule ^login/?$ login.php [QSA,L]
+
+    # Rewrites for panel routes
+    RewriteRule ^panel/?$ panel/index.php [QSA,L]
+    RewriteRule ^panel/profile/?$ panel/profile.php [QSA,L]
+    RewriteRule ^panel/projects/?$ panel/projects.php [QSA,L]
+    RewriteRule ^panel/projects/create/?$ panel/project-form.php [QSA,L]
+    RewriteRule ^panel/projects/edit/?$ panel/project-form.php [QSA,L]
+    RewriteRule ^panel/logos/?$ panel/logos.php [QSA,L]
+    RewriteRule ^panel/logos/create/?$ panel/logo-form.php [QSA,L]
+    RewriteRule ^panel/logos/edit/?$ panel/logo-form.php [QSA,L]
+    RewriteRule ^panel/logout/?$ panel/logout.php [QSA,L]
+
+    # Allow direct access to existing files and directories
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # 404 fallback for unknown routes
+    RewriteRule ^ error.php?code=404 [QSA,L]
+</IfModule>
